@@ -24,8 +24,7 @@
 #define BUZZER_PIN   PIN1
 
 #define BUTTON_PRESSED DIO_HIGH
-#define MIN_OBSTACLE_PERIOD 8   // أقصى سرعة ممكنة للمناقشة (مرحلة الوحش)
-
+#define MIN_OBSTACLE_PERIOD 8   
 /* ================= Custom Characters ================= */
 u8 DINO_STAND_PART_1[8]   = {0b00000, 0b00000, 0b00010, 0b00010, 0b00011, 0b00011, 0b00001, 0b00001};
 u8 DINO_STAND_PART_2[8]   = {0b00111, 0b00111, 0b00111, 0b00100, 0b11100, 0b11100, 0b11000, 0b01000};

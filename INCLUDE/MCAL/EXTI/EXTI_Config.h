@@ -1,5 +1,0 @@
-#ifndef INCLUDE_MCAL_EXTI_EXTI_CONFIG_H_
-#define INCLUDE_MCAL_EXTI_EXTI_CONFIG_H_
-
-#endif
-

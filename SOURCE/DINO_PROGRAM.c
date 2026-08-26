@@ -1,14 +1,10 @@
-/*
- * DINO_PROGRAM.c
- *
- *  Created on: Aug 26, 2026
- *      Author: alata
- */
 
-/*
- * main.c
- * Chrome Dino Game using Custom LCD & DIO Drivers (4-Bit Mode)
- */
+
+
+
+
+
+
 #define F_CPU 8000000UL
 #include "../INCLUDE/LIB/STD_TYPES.h"
 #include "../INCLUDE/LIB/BIT_MATH.h"
@@ -17,7 +13,6 @@
 #include <util/delay.h>
 #include <stdlib.h>
 
-/* ================= Hardware Connections ================= */
 #define BUTTON_PORT  PORTA
 #define BUTTON_PIN   PIN0
 #define BUZZER_PORT  PORTA
@@ -26,7 +21,6 @@
 #define BUTTON_PRESSED DIO_HIGH
 #define MIN_OBSTACLE_PERIOD 4
 
-/* ================= Custom Characters ================= */
 u8 DINO_STAND_PART_1[8]   = {0b00000, 0b00000, 0b00010, 0b00010, 0b00011, 0b00011, 0b00001, 0b00001};
 u8 DINO_STAND_PART_2[8]   = {0b00111, 0b00111, 0b00111, 0b00100, 0b11100, 0b11100, 0b11000, 0b01000};
 u8 DINO_RIGHT_LEG_PART_1[8] = {0b00000, 0b00000, 0b00010, 0b00010, 0b00011, 0b00011, 0b00001, 0b00001};
@@ -38,26 +32,15 @@ u8 CACTUS_PART_2[8]       = {0b00100, 0b00101, 0b00101, 0b10101, 0b11111, 0b0010
 u8 BIRD_WINGS_PART_1[8]   = {0b00001, 0b00001, 0b00001, 0b00001, 0b01001, 0b11111, 0b00000, 0b00000};
 u8 BIRD_WINGS_PART_2[8]   = {0b00000, 0b10000, 0b11000, 0b11100, 0b11110, 0b11111, 0b00000, 0b00000};
 
-/* ================= Simplified Buzzer for Proteus ================= */
-void BUZZER_voidPlayTone(u16 duration_ms) {
-    MDIO_voidSetPinValue(BUZZER_PORT, BUZZER_PIN, DIO_HIGH);
-    for(u16 i = 0; i < duration_ms; i++) {
-        _delay_ms(1);
-    }
-    MDIO_voidSetPinValue(BUZZER_PORT, BUZZER_PIN, DIO_LOW);
-}
-
-/* ================= Main Function ================= */
 int main(void) {
     MDIO_voidInit();
+
     MDIO_voidSetPinDirection(BUTTON_PORT, BUTTON_PIN, DIO_INPUT);
     MDIO_voidSetPinDirection(BUZZER_PORT, BUZZER_PIN, DIO_OUTPUT);
-
     MDIO_voidSetPinDirection(PORTD, PIN4, DIO_OUTPUT);
     MDIO_voidSetPinDirection(PORTD, PIN5, DIO_OUTPUT);
     MDIO_voidSetPinDirection(PORTD, PIN6, DIO_OUTPUT);
     MDIO_voidSetPinDirection(PORTD, PIN7, DIO_OUTPUT);
-
     MDIO_voidSetPinDirection(PORTC, PIN0, DIO_OUTPUT);
     MDIO_voidSetPinDirection(PORTC, PIN1, DIO_OUTPUT);
     MDIO_voidSetPinDirection(PORTC, PIN7, DIO_OUTPUT);
@@ -73,40 +56,52 @@ int main(void) {
     LCD_voidDrawPattern(6, CACTUS_PART_1);
     LCD_voidDrawPattern(7, CACTUS_PART_2);
 
-    /* --- Game Variables --- */
-    u8 dino_col1 = 1, dino_col2 = 2;
-    u32 leg_timer = 0; u16 leg_period = 8;
-    u8 leg_flag = 1;
+    LCD_voidGoTo_XY(LINE_1, 1);
+    LCD_voidWriteString((u8*)"PRESS TO START");
 
+    while(MDIO_PinstatusGetPinValue(BUTTON_PORT, BUTTON_PIN) != BUTTON_PRESSED);
+    LCD_voidClearDisplay();
+
+    u8 dino_col1 = 1, dino_col2 = 2;
+    u32 leg_timer = 0; u16 leg_period = 8; u8 leg_flag = 1;
     u8 obstacle_row = LINE_2; s8 obstacle_col = 15;
     u16 obstacle_period = 10;
     u32 obstacle_timer = 0;
     u8 draw_obstacle_flag = 0;
     u8 random_obstacle = 1;
     s8 bird_col = 15;
-
     u8 hitbox_col1 = 1, hitbox_col2 = 2, jump_flag = 0;
-    u32 score_timer = 0; u16 score_period = 25;
-    u32 score_units = 0, score_hundreds = 0;
+    u32 score_timer = 0; u16 score_period = 25; u32 score_units = 0, score_hundreds = 0;
     u8 acceleration_step = 2;
-
-    PIN_STATUS prev_button_state = DIO_LOW;
+    PIN_STATUS prev_button_state = BUTTON_PRESSED;
     u32 jump_start_time = 0;
     u16 jump_duration = 100;
 
-    u32 jump_sound_timer = 0; u16 jump_sound_period = 600; u32 current_millis = 0;
+    u32 current_millis = 0;
+    u8 is_buzzer_on = 0;
+    u32 buzzer_stop_time = 0;
 
     while (1) {
-        _delay_ms(1);
+        if (is_buzzer_on) {
+            MDIO_voidSetPinValue(BUZZER_PORT, BUZZER_PIN, DIO_HIGH);
+            _delay_us(500);
+            MDIO_voidSetPinValue(BUZZER_PORT, BUZZER_PIN, DIO_LOW);
+            _delay_us(500);
+
+            if (current_millis >= buzzer_stop_time) {
+                is_buzzer_on = 0;
+            }
+        } else {
+            _delay_ms(1);
+        }
+
         current_millis++;
 
-        // --- Dinosaur Legs Animation ---
         if (current_millis > leg_timer + leg_period) {
             leg_timer = current_millis;
             leg_flag = (leg_flag == 1) ? 2 : 1;
         }
 
-        // --- Obstacles Movement ---
         if (current_millis > obstacle_timer + obstacle_period) {
             obstacle_timer = current_millis;
             obstacle_col--;
@@ -120,6 +115,14 @@ int main(void) {
                     if(obstacle_period < MIN_OBSTACLE_PERIOD) obstacle_period = MIN_OBSTACLE_PERIOD;
                 }
                 random_obstacle = rand() % 3;
+
+                if (random_obstacle == 1 || random_obstacle == 2) {
+                    LCD_voidDrawPattern(6, CACTUS_PART_1);
+                    LCD_voidDrawPattern(7, CACTUS_PART_2);
+                } else {
+                    LCD_voidDrawPattern(6, BIRD_WINGS_PART_1);
+                    LCD_voidDrawPattern(7, BIRD_WINGS_PART_2);
+                }
             }
 
             s8 temp_col = obstacle_col + 1;
@@ -132,13 +135,11 @@ int main(void) {
             draw_obstacle_flag = 1;
         }
 
-        // --- Draw Dinosaur (Ground) ---
         if (jump_flag == 0) {
             LCD_voidGoTo_XY(LINE_2, dino_col1); LCD_voidWriteChar(leg_flag == 1 ? 2 : 4);
             LCD_voidGoTo_XY(LINE_2, dino_col2); LCD_voidWriteChar(leg_flag == 1 ? 3 : 5);
         }
 
-        // --- Draw Obstacles ---
         if (draw_obstacle_flag == 1) {
             if (random_obstacle == 1 || random_obstacle == 2) {
                 obstacle_row = LINE_2;
@@ -153,24 +154,19 @@ int main(void) {
             draw_obstacle_flag = 0;
         }
 
-        // --- Read Button ---
         PIN_STATUS button_state = MDIO_PinstatusGetPinValue(BUTTON_PORT, BUTTON_PIN);
 
-        // --- Jump Logic (Balanced Timer) ---
         if (button_state == BUTTON_PRESSED && prev_button_state == DIO_LOW && jump_flag == 0) {
             jump_flag = 1;
             jump_start_time = current_millis;
-
 
             jump_duration = obstacle_period * 6;
 
             LCD_voidGoTo_XY(LINE_2, dino_col1); LCD_voidWriteString((u8*)"  ");
             hitbox_col1 = 50; hitbox_col2 = 50;
 
-            if (current_millis > jump_sound_timer + jump_sound_period) {
-                jump_sound_timer = current_millis;
-                BUZZER_voidPlayTone(30);
-            }
+            is_buzzer_on = 1;
+            buzzer_stop_time = current_millis + 30;
         }
         prev_button_state = button_state;
 
@@ -185,7 +181,6 @@ int main(void) {
             }
         }
 
-        // --- Collision Logic ---
         u8 is_collision = 0;
 
         if (obstacle_row == LINE_1 && (obstacle_col == 1 || obstacle_col == 2 || bird_col == 1 || bird_col == 2) && jump_flag == 1) {
@@ -196,13 +191,24 @@ int main(void) {
             is_collision = 1;
         }
 
-        // --- GAME OVER & RESET LOGIC ---
         if(is_collision == 1) {
-            BUZZER_voidPlayTone(500);
+            for (u16 i = 0; i < 400; i++) {
+                MDIO_voidTogglePinValue(BUZZER_PORT, BUZZER_PIN);
+                _delay_ms(1);
+            }
+            MDIO_voidSetPinValue(BUZZER_PORT, BUZZER_PIN, DIO_LOW);
+            is_buzzer_on = 0;
 
             LCD_voidClearDisplay();
             LCD_voidGoTo_XY(LINE_1, 3); LCD_voidWriteString((u8*)"GAME OVER!");
             _delay_ms(2000);
+            LCD_voidClearDisplay();
+
+            LCD_voidGoTo_XY(LINE_1, 1); LCD_voidWriteString((u8*)"PRESS TO START");
+
+            while(MDIO_PinstatusGetPinValue(BUTTON_PORT, BUTTON_PIN) == BUTTON_PRESSED);
+            _delay_ms(50);
+            while(MDIO_PinstatusGetPinValue(BUTTON_PORT, BUTTON_PIN) != BUTTON_PRESSED);
             LCD_voidClearDisplay();
 
             obstacle_col = 15; bird_col = 15;
@@ -212,17 +218,20 @@ int main(void) {
             obstacle_timer = current_millis; leg_timer = current_millis; score_timer = current_millis;
             draw_obstacle_flag = 0;
             random_obstacle = 1;
-            prev_button_state = DIO_LOW;
+            prev_button_state = BUTTON_PRESSED;
+
+            LCD_voidDrawPattern(6, CACTUS_PART_1);
+            LCD_voidDrawPattern(7, CACTUS_PART_2);
 
             continue;
         }
 
-        // --- Score Logic ---
         if (current_millis > score_timer + score_period) {
             score_timer = current_millis;
             score_units++;
             if (score_units == 100) {
-                BUZZER_voidPlayTone(80); _delay_ms(50); BUZZER_voidPlayTone(80);
+                is_buzzer_on = 1;
+                buzzer_stop_time = current_millis + 100;
                 score_units = 0;
                 score_hundreds++;
                 if (score_hundreds == 100) score_hundreds = 0;

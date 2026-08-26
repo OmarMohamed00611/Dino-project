@@ -24,7 +24,7 @@
 #define BUZZER_PIN   PIN1
 
 #define BUTTON_PRESSED DIO_HIGH
-#define MIN_OBSTACLE_PERIOD 8
+#define MIN_OBSTACLE_PERIOD 4
 
 /* ================= Custom Characters ================= */
 u8 DINO_STAND_PART_1[8]   = {0b00000, 0b00000, 0b00010, 0b00010, 0b00011, 0b00011, 0b00001, 0b00001};
@@ -75,17 +75,19 @@ int main(void) {
 
     /* --- Game Variables --- */
     u8 dino_col1 = 1, dino_col2 = 2;
-    u32 leg_timer = 0; u16 leg_period = 15; u8 leg_flag = 1;
+    u32 leg_timer = 0; u16 leg_period = 8;
+    u8 leg_flag = 1;
 
     u8 obstacle_row = LINE_2; s8 obstacle_col = 15;
-    u16 obstacle_period = 14;
+    u16 obstacle_period = 10;
     u32 obstacle_timer = 0;
     u8 draw_obstacle_flag = 0;
     u8 random_obstacle = 1;
     s8 bird_col = 15;
 
     u8 hitbox_col1 = 1, hitbox_col2 = 2, jump_flag = 0;
-    u32 score_timer = 0; u16 score_period = 40; u32 score_units = 0, score_hundreds = 0;
+    u32 score_timer = 0; u16 score_period = 25;
+    u32 score_units = 0, score_hundreds = 0;
     u8 acceleration_step = 2;
 
     PIN_STATUS prev_button_state = DIO_LOW;
@@ -204,7 +206,7 @@ int main(void) {
             LCD_voidClearDisplay();
 
             obstacle_col = 15; bird_col = 15;
-            obstacle_period = 14;
+            obstacle_period = 10;
             score_units = 0; score_hundreds = 0;
             jump_flag = 0; hitbox_col1 = 1; hitbox_col2 = 2;
             obstacle_timer = current_millis; leg_timer = current_millis; score_timer = current_millis;
